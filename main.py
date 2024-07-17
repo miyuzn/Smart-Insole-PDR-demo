@@ -1,231 +1,301 @@
-import matplotlib.pyplot as plt
 
-from pdr import *
+import matplotlib.pyplot as plt
+import numpy as np
 from imu import *
 from fuse import *
-from pressure import *
-#from main_test import align_gait
-import optitrack
+from glrt import *
+from pdr import *
 from shoe import *
-
-def main():
-    # 全局参数
-    imu_freq = 100
-    pressure_freq = 50
-    read_data_length = -1
-    pressure_l_offset = 0
-    pressure_r_offset = 0
-    raise_sensitivity = 500
-
-    data_type = "3m-2"
-
-    # 源数据路径
-    imu_ori_path = f"data/{data_type}/imu.txt"
-    gyro_cali_path = "data/imu-stable.txt"
-    mag_cali_path = "data/imu-3d.txt"
-
-    p1_path = f"data/{data_type}/p1"
-    p2_path = f"data/{data_type}/p2"
-    p1_cali_path = "data/insole_cali/p1"
-    p2_cali_path = "data/insole_cali/p2"
-
-
-
-    # 读入imu原始数据
-    imu_ori_data = read_imu2(imu_ori_path, read_data_length)
-    # 读入陀螺仪和磁场校正数据
-    gyro_cali_data = read_imu2(gyro_cali_path, len(imu_ori_data))
-    mag_cali_data = read_imu2(mag_cali_path, len(imu_ori_data))
-    # 读入压力传感器数据
-    p1 = read_pressure(p1_path)
-    p2 = read_pressure(p2_path)
-    # 对齐两个压力传感器
-    p1, p2 = pressure_align(p1, p2)
-    # 读入压力传感器修正数据
-    p1_cali = read_pressure(p1_cali_path)
-    p2_cali = read_pressure(p2_cali_path)
-
-    # 压力值修正
-    p1_calied = pressure_calibration(p1[pressure_l_offset:], p1_cali)
-    p2_calied = pressure_calibration(p2[pressure_r_offset:], p2_cali)
-
-    #p1_calied = p1[pressure_l_offset:]
-    #p2_calied = p2[pressure_r_offset:]
-
-
-    # 对齐压力传感器
-    # p1_aligned, p2_aligned, pressure_tiptoe_end = shift_pressure_sensor(p1_calied, p2_calied)
-    # high_peaks, low_peaks, length = find_cop_peaks(p1_aligned, p2_aligned)
-
-    # 基于GLRT的压力传感器对齐
-    #p1_aligned, p2_aligned = align_pressure_by_GLRT(p1_calied, p2_calied)
-    p1_aligned, p2_aligned = p1_calied, p2_calied
-
-
-    # 从cop计算步态
-    #cop_gait_list = find_cop_gait(high_peaks, low_peaks, length)
-
-    # 更新cop步态算法
-    #cop_gait_list2 = find_cop_gait_2(p1_aligned, p2_aligned, raise_sensitivity)
-
-    # 参数调整
-    sma_filter_window_size = 10
-    
-    true_distance = 3
-    imu_offset = 0
-    pressure_offset_po = 0
-    pressure_range = 500
-
-
-    #show_pressure_cali(sum_pressure_list(p1), sum_pressure_list(p1_calied), sum_pressure_list(p2), sum_pressure_list(p2_calied))
-    #show_cop(cop_list_calculate(p1_calied), cop_list_calculate(p2_calied))
-    # 计算观测数据量、时间、平均频率
-    #data_count = len(imu_ori_data)
-    #time = imu_ori_data[-1].timestamp
-    #freq_avg = data_count / float(time)
-    # 提取三维加速度原始数据，并进行滤波
-    acc_ori = []
-    acc_fil = []
-    acc_ori.append(get_IMU_line(imu_ori_data, "acc", "x"))
-    acc_ori.append(get_IMU_line(imu_ori_data, "acc", "y"))
-    acc_ori.append(get_IMU_line(imu_ori_data, "acc", "z"))
-    for i in acc_ori:
-        acc_fil.append(sma_filter(i[imu_offset:], sma_filter_window_size))
-    # 提取三维陀螺仪原始数据，并进行校正和滤波
-    gyro_ori = []
-    gyro_cali = []
-    gyro_calied = []
-    gyro_fil = []
-    gyro_ori.append(get_IMU_line(imu_ori_data, "gyro", "x"))
-    gyro_ori.append(get_IMU_line(imu_ori_data, "gyro", "y"))
-    gyro_ori.append(get_IMU_line(imu_ori_data, "gyro", "z"))
-    gyro_cali.append(get_IMU_line(gyro_cali_data, "gyro", "x"))
-    gyro_cali.append(get_IMU_line(gyro_cali_data, "gyro", "y"))
-    gyro_cali.append(get_IMU_line(gyro_cali_data, "gyro", "z"))
-    for i in range(len(gyro_ori)):
-        gyro_calied.append(gyro_calibration(gyro_ori[i][imu_offset:], gyro_cali[i]))
-    for i in gyro_calied:
-        gyro_fil.append(sma_filter(i, sma_filter_window_size))
-    # 提取三维地磁仪原始数据，并进行校正和滤波
-    mag_ori = []
-    mag_cali = []
-    mag_calied = []
-    mag_fil = []
-    mag_ori.append(get_IMU_line(imu_ori_data, "mag", "x"))
-    mag_ori.append(get_IMU_line(imu_ori_data, "mag", "y"))
-    mag_ori.append(get_IMU_line(imu_ori_data, "mag", "z"))
-    mag_cali.append(get_IMU_line(mag_cali_data, "mag", "x"))
-    mag_cali.append(get_IMU_line(mag_cali_data, "mag", "y"))
-    mag_cali.append(get_IMU_line(mag_cali_data, "mag", "z"))
-    for i in range(len(mag_ori)):
-        mag_calied.append(mag_calibration(mag_ori[i][imu_offset:], mag_cali[i]))
-    for i in mag_calied:
-        mag_fil.append(sma_filter(i, sma_filter_window_size))
-
-
-    # 基于GLRT的imu和压力传感器对齐
-    right_end, imu_first_step = align_imu_pressure_by_GLRT(acc_fil, gyro_fil, p1_calied, p2_calied, 'r', 1e6, 1e4)
-
-    # 基于GLRT的步态算法
-    fused_gait_GLRT = fused_gait_by_GLRT(acc_fil, gyro_fil, p1_aligned, p2_aligned, right_end, imu_first_step, imu_freq, pressure_freq, 'r', 2e6)
-
-    # 基于IMU的步态算法
-    gait_0speed_list, pitch_angle2, gyro2 = gait_0speed_estimate(
-        acc_fil, gyro_fil)
-    
-    #show_gaits(gait_0speed_list, fused_gait_GLRT)
-
-    roll = angle_update(acc_fil, gyro_fil, gait_0speed_list, imu_freq,
-                        "roll")
-    pitch = angle_update(acc_fil, gyro_fil, gait_0speed_list, imu_freq,
-                         "pitch")
-    roll2 = angle_update(acc_fil, gyro_fil, fused_gait_GLRT, imu_freq,
-                        "roll")
-    pitch2 = angle_update(acc_fil, gyro_fil, fused_gait_GLRT, imu_freq,
-                         "pitch")
-    yaw = LKF_filterpy(gyro_fil, acc_fil, mag_fil, imu_freq)
-
-    theta_x0 = angle_update_i(acc_fil, gyro_fil[0], imu_freq)
-    theta_y0 = angle_update_i(acc_fil, gyro_fil[1], imu_freq)
-    #yaw = angle_update_i(acc_fil, gyro_fil[2], imu_freq)
-
-    # 基于总压力的步态融合
-    #pressure_gait_list = pressure_gait(p1_sum, p2_sum, pressure_offset_po)
-
-    # cop步态
-    # cop重采样
-    #cop_gait_list_60 = re_samp(cop_gait_list, pressure_freq, imu_freq)
-    #cop_gait_list_aligned = align_gait(gait_0speed_list, cop_gait_list_60)
-
-    # cop重采样
-    # 找IMU对齐动作结束点
-    #imu_tiptoe_start, imu_tiptoe_end = IMU_find_tiptoe_motion(acc_fil)
-
-    # cop重采样
-    #cop_gait_list_aligned = align_gait_2(gait_0speed_list, cop_gait_list, imu_tiptoe_end, pressure_tiptoe_end, imu_freq, pressure_freq)
-
-    #gait_fused = gait_fusion(gait_0speed_list, cop_gait_list_aligned)
-
-
-
-    # 坐标系转换
-    print("IMU:")
-    acc_global = coordinate_convert(acc_fil, roll, pitch, yaw)
-    velocity = get_velocity_with_0speed(acc_global, gait_0speed_list, imu_freq)
-    path_list = get_path(velocity, imu_freq)
-    distance = path_distance(path_list)
-    error_calculate(distance, true_distance)
-    path_2d = get_2d_path(path_list, yaw)
-    #draw_2d_path(path_2d)
-    print("GLRT:")
-    acc_global2 = coordinate_convert(acc_fil, roll2, pitch2, yaw)
-    velocity2 = get_velocity_with_0speed(acc_global2, fused_gait_GLRT, imu_freq)
-    velocity3 = get_velocity_with_0speed(acc_global2, [1 for i in range(len(fused_gait_GLRT))], imu_freq)
-    plt.plot([-i for i in velocity[1]], label="IMU velocity")
-    plt.plot([-i for i in velocity2[1]], label="Fuse velocity")
-    plt.plot([-i for i in velocity3[1]], label="Without ZUPT")
-    plt.title("Speed (Y Axis)")
-    plt.legend()
-    plt.show()
-    path_list2 = get_path(velocity2, imu_freq)
-    distance2 = path_distance(path_list2)
-    error_calculate(distance2, true_distance)
-    path_2d2 = get_2d_path(path_list2, yaw)
-    #draw_2d_path(path_2d2)
-    path_list3 = get_path(velocity3, imu_freq)
-    distance3 = path_distance(path_list3)
-    #print("Only Integral:")
-    #error_calculate(distance3, true_distance)
-    path_2d3 = get_2d_path(path_list3, yaw)
-
-
-    opti_path = optitrack.opti_test(data_type)
-    optitrack.draw_2d_path2(path_2d, path_2d2, path_2d3, opti_path, "Data Path")
-
-
-
+from ESP32 import sensor
+import ekf
+import optitrack
 
 def test():
-    #sma_test()
-    #a = read_file("C:\\Users\\CNLab\\Downloads\\data\\Data_20211011\\s1250021_1m_1.log")
-    #print(a)
+    # 参数
 
-    #read_pressure("C:\\Users\\CNLab\\OneDrive - u-aizu.ac.jp\\jlab\\data\\pressure\\p1.txt")
-    imu_ori_data = read_imu("C:\\Users\\CNLab\\OneDrive - u-aizu.ac.jp\\jlab\\data\\Data_20211011\\s1250021_4m_1.log")
+    # 源数据路径
+    path = "240710/L3.csv"
+    cali_path = "240710/gyro_cali.csv"
+    mag_path = "240710/mag_cali.csv"
+    #opti_file_path = "240623/opt/opt1.csv"
+    # 读入imu原始数据
+    ori_data = sensor.read_sensor_data_from_csv(path, 35)
+    gyro_cali_data = sensor.read_sensor_data_from_csv(cali_path, 35)
+    mag_cali_data = sensor.read_sensor_data_from_csv(mag_path, 35)
 
-    a_x_ori = get_IMU_line(imu_ori_data, "acc", "x")
+    # 提取传感器数据列表
+    acc = ori_data.get_acc()
+    gyro = ori_data.get_gyro()
+    mag = ori_data.get_mag()
+    time = ori_data.get_timestamp()
+    pressure = ori_data.get_pressure()
+    pressure_sum = ori_data.get_pressure_sum()
 
-    #plt.plot(a_x_ori, label="ori")
-    #plt.plot(a_x_sma, label="smaed")
-    #plt.show()
+    pressure_cop_x, pressure_cop_y = ori_data.get_pressure_cop()
 
-def show_gaits(imu_gait, pressure_gait):
-    plt.plot(imu_gait, label="IMU")
-    plt.plot(pressure_gait, label="IMU-Pressure Fuse")
-    plt.title("Zero Velocity List")
+    #pressure_cop_x = sma_filter(pressure_cop_x)
+    #pressure_cop_y = sma_filter(pressure_cop_y)
+
+    show_cop(pressure_cop_x, pressure_cop_y)
+
+    acc_cali = gyro_cali_data.get_acc()
+    gyro_cali = gyro_cali_data.get_gyro()
+    mag_cali = mag_cali_data.get_mag()
+
+    # 重映射imu数据
+    acc_adj = adjust_imu_data(np.array(acc))
+    gyro_adj = adjust_imu_data(np.array(gyro))
+    mag_adj = adjust_imu_data(np.array(mag))
+
+    # 零偏校正
+    acc_calied = []
+    for i in range(len(acc_adj)):
+        if i < 2:
+            acc_calied.append(acc_calibration(acc_adj[i], acc_cali[i]))
+        else:
+            acc_calied.append(acc_calibration(acc_adj[i], acc_cali[i], True))
+    gyro_calied = []
+    for i in range(len(gyro_adj)):
+        gyro_calied.append(gyro_calibration(gyro_adj[i], gyro_cali[i]))
+    mag_calied = []
+    for i in range(len(mag_adj)):
+        mag_calied.append(mag_calibration(mag_adj[i], mag_cali[i]))
+
+    # 平均窗口滤波
+    acc_fil = []
+    for i in acc_calied:
+        acc_fil.append(sma_filter(i))
+    gyro_fil = []
+    for i in gyro_calied:
+        gyro_fil.append(sma_filter(i))
+    mag_fil = []
+    for i in mag_calied:
+        mag_fil.append(sma_filter(i))
+
+    # 单位转换
+    gyro_final = np.array(gyro_fil) * math.pi / 180
+    acc_final = np.array(acc_fil) * 9.80665
+
+    # 初始姿态角解算
+    pitch_0, roll_0, yaw_0 = initial_angle(acc_final, mag_fil)
+    print(f"pitch:{pitch_0}, roll:{roll_0}, yaw:{yaw_0}")
+
+    # GLRT方法提取0速
+    Tag = ag_GLRT(acc_final, gyro_final, simdata_0)
+    #Tg = g_GLRT(gyro_adj, simdata_0)
+    Tp = p_GLRT(pressure_sum, simdata_0)
+    Tagp = agp_GLRT(acc_final, gyro_final, pressure_sum, simdata_0)
+
+    plt.plot(Tag, label="IMU GLRT Selector Output")
+    plt.legend()
+    plt.show()
+    show_GLRT(Tag, Tp, Tagp)
+    Lag = shoe_gait(Tag, 1e5)
+    #Lg = shoe_gait(Tg, 10000)
+    Lp = shoe_gait(Tp, 1e5)
+    Lagp = shoe_gait(Tagp, 1e5)
+    show_0speed_list(Lag, Lagp)
+    #show_0speed_acc(Lp, acc_adj)
+
+    # 基于0速的陀螺仪修正
+    gyro_ZUPT_ag = ZUPT_gyro_cali(gyro_final, Lag)
+    gyro_ZUPT_p = ZUPT_gyro_cali(gyro_final, Lagp)
+
+    # 基于EKF的姿态计算
+    I4 = np.eye(4)
+    #I6 = np.eye(6)
+    # 调整噪声参数
+    Q = 1 * (10 ** (-11)) * I4
+    R_a = (10 ** (-2))
+    R_m = (10 ** (0))
+    noise_imu = [R_a, R_a, R_a, R_m, R_m, R_m]
+    #R = 1 * (10 ** (-2)) * I6
+    R = np.diag(noise_imu)
+    P = I4
+    q_ekf_p = ekf.EKF(gyro_ZUPT_p, acc_final, mag_fil, np.array([[1], [0], [0], [0]]), time, Q, R, P, [1, 0, 0])
+    q_ekf_ag = ekf.EKF(gyro_ZUPT_ag, acc_final, mag_fil, np.array([[1], [0], [0], [0]]), time, Q, R, P, [1, 0, 0])
+    roll, pitch, yaw = ekf.quaternion_to_euler(q_ekf_p)
+    roll_i, pitch_i, yaw_i = ekf.quaternion_to_euler(q_ekf_ag)
+
+    # 基于积分的姿态角计算
+    # pitch_i = angle_update_i(gyro_ZUPT_ag[1], time)
+    # roll_i = angle_update_i(gyro_ZUPT_ag[0], time)
+    # yaw_i = angle_update_i(gyro_ZUPT_ag[2], time)
+    # show_imu_data(acc_adj, gyro_adj_ZUPT_p, mag_adj, time, "ZUPT gyro")
+    #show_pressure(pressure, time, path)
+    #show_angles(pitch_i, roll_i, yaw_i, time, "IMU")
+    show_angles(pitch, roll, yaw, time, "")
+    #show_acc_global(acc_fil, time, "Only Integral")
+
+    # 坐标转换
+    acc_global_p = coordinate_convert2(acc_final, q_ekf_p)
+    acc_global_ag = coordinate_convert2(acc_final, q_ekf_ag)
+    # acc_global = coordinate_convert(acc_adj, roll_i, pitch_i, yaw_i)
+    # gyro_global = coordinate_convert(gyro_adj, roll_i, pitch_i, yaw_i)
+    # mag_global = coordinate_convert(mag_adj, roll_i, pitch_i, yaw_i)
+    # plt.plot(time, gyro_global[0], label="global gyro X")
+    # plt.plot(time, gyro_global[1], label="global gyro Y")
+    # plt.plot(time, gyro_global[2], label="global gyro Z")
+    # plt.legend()
+    # plt.show()
+
+    # 映射后姿态角解算
+    # 初始姿态角解算
+    # pitch_1, roll_1, yaw_1 = initial_angle(acc_global, mag_global)
+
+    # print(f"pitch:{pitch_1}, roll:{roll_1}, yaw:{yaw_1}")
+
+    # 基于积分的姿态角计算
+    # pitch_i2 = angle_update_i(gyro_global[1], time)
+    # roll_i2 = angle_update_i(gyro_global[0], time)
+    # yaw_i2 = angle_update_i(gyro_global[2], time)
+    #show_imu_data(acc_fil, gyro_fil, mag, time, path)
+    #show_pressure(pressure, time, path)
+    #show_angles(pitch_i2, roll_i2, yaw_i2, time, "Only Integral")
+    #show_acc_global(acc_fil, time, "Only Integral")
+
+
+    # 基于0速的姿态角计算
+    # pitch = angle_update(acc_adj, gyro_adj, Lp, time, "pitch")
+    # roll = angle_update(acc_adj, gyro_adj, Lp, time, "roll")
+    # yaw = LKF_filterpy(gyro_adj, acc_adj, mag, 100)
+    # # pitch = np.array(pitch)*math.pi/180
+    # # roll = np.array(roll)*math.pi/180
+    # # yaw = np.array(yaw)*math.pi/180
+    # show_angles(pitch, roll, yaw[:len(pitch)], time[:len(pitch)], "ZUPT")
+
+
+
+    # plt.plot(time, gyro[0], label="ori gyro X")
+    # plt.plot(time, gyro[1], label="ori gyro Y")
+    # plt.plot(time, gyro[2], label="ori gyro Z")
+    # plt.legend()
+    # plt.show()
+    # show_acc_global(acc_global, time, "ZUPT")
+    # 基于0速列表计算速度
+    v1 = get_velocity_with_0speed(acc_global_ag, Lag, time)
+    v2 = get_velocity_with_0speed(acc_global_p, Lagp, time)
+    v3 = get_velocity_with_0speed(acc_global_ag, np.full(len(Lag), 1), time)
+    plt.plot(time[:len(v1[1])], v1[1], label="IMU velocity")
+    plt.plot(time[:len(v1[1])], v2[1], label="Pressure velocity")
+    plt.plot(time[:len(v1[1])], v3[1], label="Only Integral")
     plt.legend()
     plt.show()
 
+    p1 = get_path(v1, time)
+    p2 = get_path(v2, time)
+    p3 = get_path(v3, time)
 
-if __name__ == "__main__":
-    main()
+    dis1 = path_distance(p1)
+    path_2d_1 = get_2d_path(p1, yaw_i)
+    dis2 = path_distance(p2)
+    path_2d_2 = get_2d_path(p2, yaw)
+    dis3 = path_distance(p3)
+    path_2d_3 = get_2d_path(p3, yaw)
+    #draw_2d_path(path_2d_1)
+    print(f"Len 1:{dis1}")
+    #draw_2d_path(path_2d_2)
+    print(f"Len 2:{dis2}")
+
+    #opti_path = optitrack.opti_test(opti_file_path, yaw_0 + math.pi)
+    #optitrack.draw_2d_path2(path_2d_1, path_2d_2, path_2d_3, opti_path)
+    optitrack.draw_2d_path3(path_2d_1, path_2d_2, path_2d_3)
+
+
+# 展示GLRT选择器输出
+def show_GLRT(Tag, Tp, Tagp):
+    plt.plot(Tag, label = "IMU")
+    plt.plot(Tp, label = "Pressure")
+    plt.plot(Tagp, label = "Fusion")
+    plt.legend()
+    plt.title("GLRT Selector Output")
+    plt.show()
+    
+# 展示步态输出
+def show_0speed_list(Lag, Lp):
+    plt.plot(Lag, label = "IMU")
+    plt.plot(Lp, label = "Pressure")
+    plt.legend()
+    plt.title("0 Speed List Output")
+    plt.show()
+
+# 展示步态输出和IMU数据
+def show_0speed_acc(L, acc):
+    plt.plot(L, label="0 Speed")
+    plt.plot(acc[0], label="X Acc")
+    plt.plot(acc[1], label="Y Acc")
+    plt.plot(acc[2], label="Z Acc")
+    plt.title("0 Speed List and acc")
+    plt.legend()
+    plt.show()
+
+# 展示IMU数据
+def show_imu_data(acc, gyro, mag, time, title):
+    fig, axs = plt.subplots(3, 1)
+    axs[0].plot(time, acc[0], label="X")
+    axs[0].plot(time, acc[1], label="Y")
+    axs[0].plot(time, acc[2], label="Z")
+    axs[0].set_title(f"{title} Acc")
+    axs[0].legend()
+
+    axs[1].plot(time, gyro[0], label="X")
+    axs[1].plot(time, gyro[1], label="Y")
+    axs[1].plot(time, gyro[2], label="Z")
+    axs[1].set_title(f"{title} Gyro")
+    axs[1].legend()
+
+    axs[2].plot(time, mag[0], label="X")
+    axs[2].plot(time, mag[1], label="Y")
+    axs[2].plot(time, mag[2], label="Z")
+    axs[2].set_title(f"{title} Mag")
+    axs[2].legend()
+    plt.tight_layout()
+    plt.show()
+
+# 展示压力
+def show_pressure(pressure, time, title):
+    sum_pressure = get_sum_pressure(pressure)
+    plt.plot(time, sum_pressure)
+    plt.title(f"{title} Pressure")
+    plt.show()
+
+# 展示姿态角
+def show_angles(pitch, roll, yaw, time, title):
+    plt.plot(time, pitch, label="Pitch")
+    plt.plot(time, roll, label="Roll")
+    plt.plot(time, yaw, label="Yaw")
+    plt.title(f"{title} Angles")
+    plt.ylabel("Angle(rad)")
+    plt.xlabel("Timestamp")
+    plt.legend()
+    plt.show()
+
+# 展示加速度
+def show_acc_global(acc_global, time, title):
+    align = min(len(acc_global[0]), len(time))
+    time = time[:align]
+    plt.plot(time, acc_global[0], label="X")
+    plt.plot(time, acc_global[1], label="Y")
+    plt.plot(time, acc_global[2], label="Z")
+    plt.title(f"{title} Global Acc")
+    plt.legend()
+    plt.show()
+
+# 展示重心
+def show_cop(x_cop, y_cop):
+    plt.plot(x_cop, label="X COP")
+    plt.plot(y_cop, label="Y COP")
+    plt.title("COP")
+    plt.legend()
+    plt.show()
+
+# 求总压力
+def get_sum_pressure(pressure_sensors):
+    sum_pressure_list = []
+    for i in pressure_sensors:
+        sum_pressure_list.append(np.sum(i))
+    return sum_pressure_list
+
+
+if __name__ =="__main__":
+    test()

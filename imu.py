@@ -4,13 +4,13 @@ from sensor_class import sma_filter
 import numpy as np
 
 # 初始姿态角解算
-def initial_angle(acc, mag):
-    acc_x = acc[0][0]
-    acc_y = acc[1][0]
-    acc_z = acc[2][0]
-    mx = mag[0][0]
-    my = mag[1][0]
-    mz = mag[2][0]
+def initial_angle(acc, mag, window=10):
+    acc_x = np.average(acc[0][0:window])
+    acc_y = np.average(acc[1][0:window])
+    acc_z = np.average(acc[2][0:window])
+    mx = np.average(mag[0][0:window])
+    my = np.average(mag[1][0:window])
+    mz = np.average(mag[2][0:window])
     pitch = math.atan2(-acc_x, math.sqrt(acc_y**2 + acc_z**2))
     roll = math.atan2(acc_y, acc_z)
     

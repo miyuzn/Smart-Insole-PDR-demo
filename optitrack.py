@@ -54,6 +54,37 @@ def draw_2d_path2(path1, path2, path3, path4):
     plt.grid(True)
     plt.show()
 
+def draw_2d_path3(path1, path2, path3):
+    x1 = []
+    x2 = []
+    x3 = []
+    x4 = []
+    y1 = []
+    y2 = []
+    y3 = []
+    for i in range(len(path1)):
+        x1.append(path1[i].real)
+        y1.append(path1[i].imag)
+    for i in range(len(path2)):
+        x2.append(path2[i].real)
+        y2.append(path2[i].imag)
+    for i in range(len(path3)):
+        x3.append(path3[i].real)
+        y3.append(path3[i].imag)
+
+    plt.figure(figsize=(4.5,4))
+    plt.xlim(-2, 10)
+    plt.ylim(-2, 10)
+    plt.plot(x1, y1, label="IMU based ZUPT")  # 添加标记以便更清楚地看到点
+    plt.plot(x2, y2, label="IMU-Pressure Fuse ZUPT")
+    plt.plot(x3, y3, label="Only Integral")
+    plt.xlabel('X (m)')
+    plt.ylabel('Y (m)')
+    plt.title('2D Path')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
+
 def rotate_points(x_list, y_list, yaw):
     # 确保x_list和y_list长度相同
     if len(x_list) != len(y_list):
