@@ -4,6 +4,10 @@ import numpy as np
 from PIL import Image
 import sensor
 
+row = 5
+col = 5
+
+
 def update_heatmap(new_data):
     heatmap.set_data(new_data)
     # 需要更新色彩条的最大最小值，如果数据变化幅度大的话
@@ -16,7 +20,7 @@ if __name__ == "__main__":
     # 初始化热力图
     plt.ion()  # 开启interactive mode
     fig, ax = plt.subplots()
-    data0 = np.random.randint(309, 314, (7, 5))
+    data0 = np.random.randint(309, 314, (row, col))
     heatmap = ax.imshow(data0, cmap='hot', interpolation='nearest')
     heatmap.set_clim(vmin=300, vmax=1500)
     # 添加颜色条
@@ -37,6 +41,6 @@ if __name__ == "__main__":
         pressure_sensors = sensor_data.pressure_sensors
         #print(pressure_sensors)
         if counter % 20 == 0:
-            update_heatmap(np.reshape(pressure_sensors,(7,5)))
+            update_heatmap(np.reshape(pressure_sensors,(row, col)))
         
         counter += 1
