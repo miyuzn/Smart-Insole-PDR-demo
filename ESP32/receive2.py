@@ -6,60 +6,64 @@ import pickle
 from datetime import datetime
 
 # left:1370 right: 1371 glove:1381
-PORT_L = 1370
-PORT_R = 1371
+# Define port
+PORT_L = 13250
+PORT_R = 13251
 data_list_l = []
 data_list_r = []
+exp_name = './exp/1212/'
 
-# 定义一个信号处理器，用于捕获中断信号
+# Define a signal handler to capture interrupt signals
 def signal_handler(sig, frame):
-    # 获取当前时间
+    # Get the current time
     now = datetime.now()
 
-    # 格式化时间
-    file_name_l = str(now.strftime("%Y%m%d_%H%M%S") + "_left" + ".csv")
-    file_name_r = str(now.strftime("%Y%m%d_%H%M%S") + "_right" + ".csv")
+    # Format the time
+    file_name_l = exp_name + str(now.strftime("%Y%m%d_%H%M%S") + "_left" + ".csv")
+    file_name_r = exp_name + str(now.strftime("%Y%m%d_%H%M%S") + "_right" + ".csv")
 
     print(f'\nExiting gracefully. Sensor data saved to {file_name_l}, {file_name_r}.')
     sensor.save_sensor_data_to_csv(data_list_l, file_name_l)
     sensor.save_sensor_data_to_csv(data_list_r, file_name_r)
     sys.exit(0)
 
-# 配置信号处理器来监听SIGINT（通常是Ctrl+C）
+# Configure the signal handler to listen for SIGINT (usually Ctrl+C)
 signal.signal(signal.SIGINT, signal_handler)
 
-# 接收广播数据函数
+# Function to receive broadcast data
 def receive_broadcast():
-    udp_ip = ""  # 监听广播地址
+    udp_ip = ""  # Listening broadcast address
     udp_port_l = PORT_L
     udp_port_r = PORT_R
     count = 0
-    # 创建UDP socket
-    # 接收数据的sock
+    # Create UDP socket
+    # Socket for receiving data
     sock_l = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock_r = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    # 绑定端口和IP
+    # Bind port and IP
     sock_l.bind((udp_ip, udp_port_l))
     sock_r.bind((udp_ip, udp_port_r))
 
-    # 用于可视化的sock
+    # Socket for visualization
     local_ip = "127.0.0.1"
     local_port = 53000
+    local_port2 = 53001
     sock2 = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
     print("Connecting to sensor...")
     while True:
-        data_l, addr_l = sock_l.recvfrom(1024)  # 缓冲区大小为1024字节
-        data_r, addr_r = sock_r.recvfrom(1024)  # 缓冲区大小为1024字节
+        data_l, addr_l = sock_l.recvfrom(1024)  # Buffer size is 1024 bytes
+        data_r, addr_r = sock_r.recvfrom(1024)  # Buffer size is 1024 bytes
 
         data2 = pickle.dumps((data_l, data_r))
         sock2.sendto(data2, (local_ip, local_port))
+        sock2.sendto(data2, (local_ip, local_port2))
         
         data_list_l.append(sensor.parse_sensor_data(data_l))
         data_list_r.append(sensor.parse_sensor_data(data_r))
         count += 1
         if count % 100 == 0:
-            print(f"\rReceived {count} packets from {addr_l}, {addr_r}, Press Ctrl+C to stop receive.")
+            print(f"\rReceived {count} packets from {addr_l}, {addr_r}, Press Ctrl+C to stop receiving.", end='')
 
 if __name__ == "__main__":
     receive_broadcast()

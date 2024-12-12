@@ -25,12 +25,39 @@ coordinate_y_35_insole = [
 # 传感器读数（每帧）
 class SensorData:
     def __init__(self, timestamp, pressure_sensors, magnetometer, gyroscope, accelerometer):
-        # 初始化传感器数据对象，存储各种传感器值
         self.timestamp = timestamp
-        self.pressure_sensors = pressure_sensors
+        self.pressure_sensors = pressure_sensors  # 这里仍然用pressure_sensors来表示电阻值
         self.magnetometer = magnetometer
         self.gyroscope = gyroscope
         self.accelerometer = accelerometer
+    
+    def sensor_v_to_r(self):
+        v_ref = 0.312
+        R1 = 5000
+        for i in range(len(self.pressure_sensors)):
+            current_v = self.pressure_sensors[i] / 1000
+            if current_v > v_ref:
+                self.pressure_sensors[i] = R1 * v_ref / (current_v - v_ref)
+            else:
+                self.pressure_sensors[i] = float('inf')
+
+    def sensor_r_to_f(self, params):
+        for i in range(len(self.pressure_sensors)):
+            sensor_id = i + 1
+            if sensor_id in params:
+                k, alpha = params[sensor_id]
+                R = self.pressure_sensors[i]
+                if R != float('inf'):
+                    res = (R / k) ** (1 / alpha)
+                    if res < 1e-2:
+                        self.pressure_sensors[i] = 0  # 处理压力值过小的情况
+                    elif res > 50:
+                        self.pressure_sensors[i] = 50 # 处理异常值或超过量程的情况
+                    else:
+                        self.pressure_sensors[i] = res
+                else:
+                    self.pressure_sensors[i] = 0  # 处理电阻无限大的情况
+
 
 # 传感器数据
 class SensorDataList:
@@ -137,7 +164,7 @@ def save_sensor_data_to_csv(sensor_data_list, filename):
         header_writer = csv.writer(csvfile)
 
         # 首先检查数据列表是否为空，以避免索引错误
-        if sensor_data_list:
+        if len(sensor_data_list) != 0:
             # 写入DN和SN
             header_writer.writerow([f"// DN: {108}, SN: {35}"])
 
@@ -164,9 +191,15 @@ def read_sensor_data_from_csv(filepath, p_num=35):
     sensor_data_list = []
 
     with open(filepath, 'r', newline='') as csvfile:
-        # Skip the first line containing DN and SN
-        next(csvfile)
         reader = csv.DictReader(csvfile)
+
+        # 获取列名并检查是否有 Timestamp 列
+        fieldnames = reader.fieldnames
+        if fieldnames[0] != 'Timestamp':
+            # 如果第一列不是 Timestamp，则跳过一列重新读取
+            #next(reader)
+            reader = csv.DictReader(csvfile)
+            
         for row in reader:
             # Extract timestamp and its millisecond part
             timestamp = float(row['Timestamp'])
@@ -180,7 +213,7 @@ def read_sensor_data_from_csv(filepath, p_num=35):
             sensor_data = SensorData(timestamp, pressure_sensors, magnetometer, gyroscope, accelerometer)
             sensor_data_list.append(sensor_data)
 
-    return SensorDataList(sensor_data_list)
+    return sensor_data_list
 
 # 测试函数
 def test_save():
@@ -192,10 +225,10 @@ def test_save():
         save_sensor_data_to_csv([sensor_data], 'sensor_data.csv')
 
 def test_read():
-    return read_sensor_data_from_csv("ESP32/test1.csv")
+    return read_sensor_data_from_csv("./sensor_data.csv", 10)
 
 if __name__ == "__main__":
     # 示例数据
-    # test_save()
+    test_save()
     a = test_read()
     print(a)

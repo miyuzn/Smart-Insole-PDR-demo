@@ -4,7 +4,7 @@ import numpy as np
 from PIL import Image
 import sensor
 
-row = 5
+row = 7
 col = 5
 
 
@@ -22,7 +22,7 @@ if __name__ == "__main__":
     fig, ax = plt.subplots()
     data0 = np.random.randint(309, 314, (row, col))
     heatmap = ax.imshow(data0, cmap='hot', interpolation='nearest')
-    heatmap.set_clim(vmin=300, vmax=1500)
+    heatmap.set_clim(vmin=300, vmax=1000)
     # 添加颜色条
     cbar = plt.colorbar(heatmap, ax=ax)
     cbar.set_label('Value')
