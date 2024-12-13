@@ -11,7 +11,7 @@ PORT_L = 13250
 PORT_R = 13251
 data_list_l = []
 data_list_r = []
-exp_name = './exp/1212/'
+exp_name = './exp/1212/cali/'
 
 # Define a signal handler to capture interrupt signals
 def signal_handler(sig, frame):

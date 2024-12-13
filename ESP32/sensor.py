@@ -195,7 +195,7 @@ def read_sensor_data_from_csv(filepath, p_num=35):
 
         # 获取列名并检查是否有 Timestamp 列
         fieldnames = reader.fieldnames
-        if fieldnames[0] != 'Timestamp':
+        if fieldnames[0].startswith("//"):
             # 如果第一列不是 Timestamp，则跳过一列重新读取
             #next(reader)
             reader = csv.DictReader(csvfile)

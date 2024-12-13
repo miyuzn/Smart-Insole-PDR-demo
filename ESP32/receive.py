@@ -4,10 +4,9 @@ import sys
 import sensor
 from datetime import datetime
 
-# left:1370 right: 1371 glove:1381
 # new_insole: 
-# 25l: 13250; 25r: 13251
-PORT = 13250
+# left: 13250; right: 13251
+PORT = 13251
 data_list = []
 
 # 定义一个信号处理器，用于捕获中断信号
@@ -16,7 +15,7 @@ def signal_handler(sig, frame):
     now = datetime.now()
 
     # 格式化时间
-    file_name = './data/' + str(now.strftime("%Y%m%d_%H%M%S") + ".csv")
+    file_name = './exp/1212/' + str(now.strftime("%Y%m%d_%H%M%S") + ".csv")
     
 
     print(f'\nExiting gracefully. Sensor data saved to {file_name}.')
