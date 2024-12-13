@@ -5,6 +5,9 @@ from PIL import Image
 import sensor
 
 row = 7
+
+
+
 col = 5
 
 
