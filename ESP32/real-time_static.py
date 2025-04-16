@@ -9,7 +9,7 @@ from torch import nn
 # 定义接收套接字的IP和端口
 LOCAL_IP = "127.0.0.1"
 LOCAL_PORT = 53000
-model_path = './model_v_aug_True.pth'
+model_path = './model_v_aug_False.pth'
 
 # 定义存储实时数据的列表
 data_list_l = []
@@ -29,7 +29,7 @@ sequence_length = 100
 dynamic_data_buffer = deque(maxlen=sequence_length)
 
 # 静态参数配置
-# static_param_control = [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]  # 控制启用的静态参数
+# static_param_control = [1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0]  # 控制启用的静态参数
 
 # 从控制台输入静态参数
 def input_static_parameters(static_param_control):

@@ -6,6 +6,7 @@ from datetime import datetime
 
 # new_insole: 
 # left: 13250; right: 13251
+# test_2_sensor: 13400
 PORT = 13251
 data_list = []
 
@@ -15,7 +16,7 @@ def signal_handler(sig, frame):
     now = datetime.now()
 
     # 格式化时间
-    file_name = './exp/1212/' + str(now.strftime("%Y%m%d_%H%M%S") + ".csv")
+    file_name = './exp/0416/' + str(now.strftime("%Y%m%d_%H%M%S") + ".csv")
     
 
     print(f'\nExiting gracefully. Sensor data saved to {file_name}.')
@@ -48,7 +49,7 @@ def receive_broadcast():
         data_list.append(sensor.parse_sensor_data(data))
         count += 1
         if count % 100 == 0:
-            print(f"\rReceived {count} packets from {addr}, Press Ctrl+C to stop receive.", end='')
+            print(f"\rReceived {count} packets from {addr}, Press Ctrl+C to stop receive.")
 
 if __name__ == "__main__":
     receive_broadcast()

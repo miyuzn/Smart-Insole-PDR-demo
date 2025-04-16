@@ -8,8 +8,8 @@ import tkinter as tk
 from tkinter import font
 
 # 定义形状
-row = 7
-col = 5
+row = 2
+col = 2
 
 class MaxDetectionApp:
     def __init__(self, master):
@@ -270,10 +270,10 @@ class MaxDetectionApp:
                 canvas.create_line(60, threshold_y, 160, threshold_y, fill='blue', dash=(4, 2))
                 canvas.create_text(50, threshold_y, text=Wn, anchor='e', font=('Arial', 12))
                 # 显示阈值
-                canvas.create_text(110, threshold_y - 10, text=f"{threshold:.2f}", font=('Arial', 12))
+                # canvas.create_text(110, threshold_y - 10, text=f"{threshold:.2f}", font=('Arial', 12))
 
             # 显示当前压力值
-            canvas.create_text(110, y0 + 20, text=f"{current_pressure:.2f}", font=('Arial', 16))
+            # canvas.create_text(110, y0 + 20, text=f"{current_pressure:.2f}", font=('Arial', 16))
         self.master.after(0, update)
 
     def update_right_canvas(self, current_pressure):
@@ -311,10 +311,10 @@ class MaxDetectionApp:
                 canvas.create_line(60, threshold_y, 160, threshold_y, fill='blue', dash=(4, 2))
                 canvas.create_text(50, threshold_y, text=Wn, anchor='e', font=('Arial', 12))
                 # 显示阈值
-                canvas.create_text(110, threshold_y - 10, text=f"{threshold:.2f}", font=('Arial', 12))
+                # canvas.create_text(110, threshold_y - 10, text=f"{threshold:.2f}", font=('Arial', 12))
 
             # 显示当前压力值
-            canvas.create_text(110, y0 + 20, text=f"{current_pressure:.2f}", font=('Arial', 16))
+            # canvas.create_text(110, y0 + 20, text=f"{current_pressure:.2f}", font=('Arial', 16))
         self.master.after(0, update)
 
     def get_pressure_color(self, pressure, thresholds):
